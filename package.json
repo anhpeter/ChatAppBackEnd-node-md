@@ -1,16 +1,26 @@
 {
     "name": "server",
-    "version": "0.0.0",
-    "private": true,
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
     "scripts": {
-        "start": "nodemon ./bin/www"
+        "start": "nodemon index.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
     },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/peteranh99/chatAppBackEnd-node-md.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/peteranh99/chatAppBackEnd-node-md/issues"
+    },
+    "homepage": "https://github.com/peteranh99/chatAppBackEnd-node-md#readme",
     "dependencies": {
-        "cookie-parser": "~1.4.4",
-        "debug": "~2.6.9",
-        "ejs": "~2.6.1",
-        "express": "~4.16.1",
-        "http-errors": "~1.6.3",
-        "morgan": "~1.9.1"
+        "body-parser": "^1.19.0",
+        "cors": "^2.8.5",
+        "express": "^4.17.1",
+        "socket.io": "^3.1.1"
     }
 }
