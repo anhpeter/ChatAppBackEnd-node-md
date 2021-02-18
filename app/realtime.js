@@ -8,8 +8,22 @@ const realtime = (io) => {
             console.log('online users', onlineUsers.showOnlineUsers());
         }
         socket.on('john', (data) => {
+            socket.join('all');
             onlineUsers.addUser(data.user, socket.id);
             emitAllOnlineUsers();
+            io.to('all').emit('new-joiner', data);
+        })
+
+        socket.on('send-message', (data) => {
+            io.to('all').emit('receive-message', data);
+        })
+
+        socket.on('typing', (data) => {
+            socket.to('all').emit('typing', data)
+        })
+
+        socket.on('stop-typing', (data) => {
+            socket.to('all').emit('stop-typing', data)
         })
 
         socket.on('leave', (data) => {

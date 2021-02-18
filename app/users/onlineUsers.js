@@ -16,9 +16,11 @@ const onlineUsers = {
             let user = this.users[index];
             let count = user.socketIds.length;
             if (count > 1) {
-                let idIndex = user.socketIds.indexOf(id => id === socketId);
+                let idIndex = user.socketIds.indexOf(socketId);
                 user.socketIds.splice(idIndex, 1);
-            } else this.users.splice(index, 1);
+            } else {
+                this.users.splice(index, 1);
+            }
         }
     },
 
@@ -48,7 +50,7 @@ const onlineUsers = {
     },
 
     showOnlineUsers: function () {
-        onlineUsers.users.map((user) => {
+        return onlineUsers.users.map((user) => {
             return { username: user.username, socketCount: user.socketIds.length };
         });
     }

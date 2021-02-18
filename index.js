@@ -5,8 +5,18 @@ const express = require('express');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const realtime = require('./app/realtime');
+const mongoose = require('mongoose');
 
 const app = express();
+
+// database
+mongoose.connect('mongodb+srv://webfullstack99:Loveguitar99@cluster0.mrjwz.gcp.mongodb.net/chat?retryWrites=true&w=majority', { useNewUrlParser: true, useUnifiedTopology: true });
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function () {
+    console.log('db connected');
+    // we're connected!
+});
 app.use(bodyParser.json());
 const server = http.createServer(app);
 const io = socketIo(server);
