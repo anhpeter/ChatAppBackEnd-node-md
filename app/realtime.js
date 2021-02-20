@@ -29,12 +29,19 @@ const realtime = (io) => {
         socket.on('leave', (data) => {
             onlineUsers.removeBySocketId(socket.id);
             emitAllOnlineUsers();
+            socket.leave('all');
         })
+
+        socket.on('disconnecting', function () {
+            let user = onlineUsers.removeBySocketId(socket.id);
+            socket.rooms.forEach((room) => {
+                io.to(room).emit('user-left', { user });
+            });
+            emitAllOnlineUsers();
+        });
 
         socket.on('disconnect', () => {
             console.log('user disconnected');
-            onlineUsers.removeBySocketId(socket.id);
-            emitAllOnlineUsers();
         })
     })
 }

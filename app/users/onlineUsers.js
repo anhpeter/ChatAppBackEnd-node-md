@@ -21,6 +21,7 @@ const onlineUsers = {
             } else {
                 this.users.splice(index, 1);
             }
+            return user;
         }
     },
 

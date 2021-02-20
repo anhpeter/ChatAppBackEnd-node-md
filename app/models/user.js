@@ -1,4 +1,5 @@
 const Helper = require('../defines/Heper');
+const mongoose = require('mongoose');
 const model = require('../schemas/user');
 const MyModel = {
     listAll: function (callback) {
@@ -8,6 +9,19 @@ const MyModel = {
     },
 
     // FIND
+    findUsersByIds: function (ids, callback) {
+        ids = ids.map((id) => {
+            return new mongoose.Types.ObjectId(id);
+        })
+        this.getModel().find({
+            _id: {
+                $in: ids
+            }
+        }, (err, docs) => {
+            if (Helper.isFn(callback)) callback(err, docs);
+        })
+    },
+
     findById: function (id, callback) {
         this.getModel().findById(id, (err, doc) => {
             if (Helper.isFn(callback)) callback(err, doc);
@@ -21,7 +35,74 @@ const MyModel = {
         })
     },
 
-    // CHECK
+    findStrangerByUsername(username, callback) {
+        this.getModel().aggregate([
+            {
+                $match: {
+                    username
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    'all_friends': '$friend.all',
+                }
+            }
+        ], (err, docs) => {
+            if (docs.length > 0) {
+                docs.forEach((doc) => {
+                    let ids = doc.all_friends;
+                    ids = ids.map((id) => {
+                        return new mongoose.Types.ObjectId(id);
+                    })
+                    this.getModel().find({
+                        _id: {
+                            $nin: ids
+                        },
+                        username: {
+                            $ne: username
+                        }
+                    }, (err, docs) => {
+                        if (Helper.isFn(callback)) callback(err, docs);
+                    })
+                })
+            } else if (Helper.isFn(callback)) callback(err, docs);
+        })
+    },
+
+    findFriendsByUsername(username, callback) {
+        this.getModel().aggregate([
+            {
+                $match: {
+                    username
+                },
+            },
+            {
+                $project: {
+                    'all_friends': '$friend.all',
+                }
+            }
+        ], (err, docs) => {
+            if (docs.length > 0) {
+                docs.forEach((doc) => {
+                    let ids = doc.all_friends;
+                    if (ids.length > 0) {
+                        ids = ids.map((id) => {
+                            return new mongoose.Types.ObjectId(id);
+                        })
+                        this.getModel().find({
+                            _id: {
+                                $in: ids
+                            },
+                        }, (err, docs) => {
+                            if (Helper.isFn(callback)) callback(err, docs);
+                        })
+                    } else if (Helper.isFn(callback)) callback(err, docs);
+                })
+            } else if (Helper.isFn(callback)) callback(err, docs);
+        })
+    },
+
     findByUsername: function (username, callback) {
         this.getModel().find({ username }, (err, docs) => {
             const [doc] = docs;
@@ -41,7 +122,6 @@ const MyModel = {
     reset: function (callback) {
         const items = this.getInitialData();
         this.getModel().deleteMany({}, (err, result) => {
-            console.log('deleted', result.n);
             let promises = [];
             items.forEach((item) => {
                 let promise = new Promise((resolve) => {
@@ -53,7 +133,6 @@ const MyModel = {
             })
             Promise.all(promises)
                 .then((result) => {
-                    console.log('done', result);
                     if (Helper.isFn(callback)) callback(null, result);
                 }).catch((err) => {
                     if (Helper.isFn(callback)) callback(err, null);
@@ -67,6 +146,11 @@ const MyModel = {
                 username: 'peteranh',
                 password: 'admin',
                 picture: "https://scontent.fsgn2-5.fna.fbcdn.net/v/t1.0-9/61103469_1109770422558853_2564158225184194560_n.jpg?_nc_cat=104&ccb=2&_nc_sid=09cbfe&_nc_ohc=BJ6L5IV_JfQAX8iDLtk&_nc_ht=scontent.fsgn2-5.fna&oh=ccf7880a2a77ee48a2fdf6663f3050c0&oe=6049EB1D",
+                friend: {
+                    all: [new mongoose.Types.ObjectId('56cb91bdc3464f14678934ca'), new mongoose.Types.ObjectId('56cb91bdc3464f14678934ca'), new mongoose.Types.ObjectId('56cb91bdc3464f14678934ca')],
+                    request: [],
+                    sent_request: [],
+                }
 
             },
             {
@@ -100,6 +184,36 @@ const MyModel = {
 
     getModel: function () {
         return model;
+    },
+
+    sentFriendRequestById: function (id, friendId, callback) {
+        let promises = [];
+        // update user
+        promises.push(
+            new Promise((resolve) => {
+                this.getModel().findByIdAndUpdate(id, { $addToSet: { 'friend.sent_request': new mongoose.Types.ObjectId(friendId), }, },
+                    (err, result) => {
+                        resolve({ err, result });
+                    }
+                )
+            })
+        )
+
+        // update friend
+        promises.push(
+            new Promise((resolve) => {
+                this.getModel().findByIdAndUpdate(friendId, { $addToSet: { 'friend.request': new mongoose.Types.ObjectId(id), }, },
+                    (err, result) => {
+                        resolve({ err, result });
+                    }
+                )
+            })
+        )
+
+        Promise.all(promises)
+            .then((promisesResult) => {
+                if (Helper.isFn(callback)) callback(err, promisesResult);
+            })
     }
 }
 module.exports = MyModel;

@@ -3,6 +3,8 @@ const MyResponse = require('../app/defines/MyResponse');
 const router = express.Router();
 const MainModel = require('../app/models/user');
 
+
+
 // CHECK USERNAME EXIST
 router.get('/getUserByUsername', (req, res, next) => {
     const { username } = req.query;
@@ -29,11 +31,50 @@ router.post('/createAccount', (req, res, next) => {
     });
 })
 
+// GET ALL USER FRIENDS BY USERNAME
+router.get('/getFriendsByUsername', (req, res, next) => {
+    const { username } = req.query;
+    MainModel.findFriendsByUsername(username, (err, docs) => {
+        if (err) MyResponse.error(res, err);
+        else
+            if (docs)
+                MyResponse.success(res, docs);
+            else
+                MyResponse.fail(res);
+    });
+})
+
+// GET USERS BY IDS
+router.post('/getUsersByIds', (req, res, next) => {
+    const { ids } = req.body;
+    
+    MainModel.findUsersByIds(ids, (err, docs) => {
+        if (err) MyResponse.error(res, err);
+        else
+            if (docs)
+                MyResponse.success(res, docs);
+            else
+                MyResponse.fail(res);
+    });
+})
+
+// GET STRANGER
+router.get('/getStrangerByUsername', (req, res, next) => {
+    const { username } = req.query;
+    MainModel.findStrangerByUsername(username, (err, docs) => {
+        if (err) MyResponse.error(res, err);
+        else
+            if (docs)
+                MyResponse.success(res, docs);
+            else
+                MyResponse.fail(res);
+    });
+})
+
+
 // LOGIN
 router.get('/getUserByUsernameAndPassword', (req, res, next) => {
     const { username, password } = req.query;
-    console.log(username, password);
-
     MainModel.findByUsernameAndPassword(username, password, (err, doc) => {
         if (err) MyResponse.error(res, err);
         else
@@ -57,4 +98,27 @@ router.get('/all', (req, res) => {
     })
 })
 
+// FRIEND ACTIONS
+router.post('/sentFriendRequest', (req, res) => {
+    const { id, friendId } = req.body;
+    if (id && friendId) {
+        MainModel.sentFriendRequestById(id, friendId, (err, result) => {
+            if (err) MyResponse.error(res, err);
+            else
+                if (result)
+                    MyResponse.success(res, result);
+                else
+                    MyResponse.fail(res);
+        });
+    } else {
+        MyResponse.fail(res);
+    }
+})
+
+// RUN ACTION
+router.get('/runAction', (req, res) => {
+    MainModel.listAll((err, result) => {
+        res.json(result)
+    })
+})
 module.exports = router;
