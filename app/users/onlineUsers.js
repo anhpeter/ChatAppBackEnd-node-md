@@ -38,6 +38,18 @@ const onlineUsers = {
         })
     },
 
+    findById: function (id) {
+        let index = this.findIndexById(id);
+        if (index > -1) return this.users[index];
+        return null;
+    },
+
+    findIndexById: function (id) {
+        return this.users.findIndex((user) => {
+            return (user._id === id);
+        })
+    },
+
     findByUsername: function (username) {
         let index = this.findIndexByUsername(username);
         if (index > -1) return this.users[index];
@@ -54,6 +66,11 @@ const onlineUsers = {
         return onlineUsers.users.map((user) => {
             return { username: user.username, socketCount: user.socketIds.length };
         });
+    },
+    updateById: function (id, item) {
+        const index = this.findIndexById(id);
+        const user = { ...this.users[index] };
+        this.users[index] = { ...user, ...item };
     }
 }
 

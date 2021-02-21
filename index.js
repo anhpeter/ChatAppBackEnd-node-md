@@ -4,8 +4,9 @@ const bodyParser = require('body-parser');
 const express = require('express');
 const socketIo = require('socket.io');
 const cors = require('cors');
-const realtime = require('./app/realtime');
+const realtime = require('./app/Socket/realtime');
 const mongoose = require('mongoose');
+const friendAction = require('./app/Socket/FriendAction');
 
 const app = express();
 

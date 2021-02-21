@@ -4,7 +4,7 @@ const schema = new mongoose.Schema({
     password: String,
     picture: String,
     friend: {
-        all: [mongoose.Schema.Types.ObjectId,],
+        friend: [mongoose.Schema.Types.ObjectId,],
         request: [mongoose.ObjectId],
         sent_request: [mongoose.ObjectId],
     },

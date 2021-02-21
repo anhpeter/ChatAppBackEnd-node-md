@@ -1,7 +1,10 @@
-const Helper = require('../defines/Heper');
+const Helper = require('../defines/Helper');
 const mongoose = require('mongoose');
 const model = require('../schemas/user');
+const Model = require('./Model');
 const MyModel = {
+    ...Model,
+
     listAll: function (callback) {
         this.getModel().find({}, (err, docs) => {
             if (Helper.isFn(callback)) callback(err, docs);
@@ -45,13 +48,15 @@ const MyModel = {
             {
                 $project: {
                     _id: 0,
-                    'all_friends': '$friend.all',
+                    'friend': '$friend.friend',
+                    'request': '$friend.request',
+                    'sent_request': '$friend.sent_request',
                 }
             }
         ], (err, docs) => {
             if (docs.length > 0) {
                 docs.forEach((doc) => {
-                    let ids = doc.all_friends;
+                    let ids = [...doc.friend, ...doc.sent_request, ...doc.request];
                     ids = ids.map((id) => {
                         return new mongoose.Types.ObjectId(id);
                     })
@@ -70,6 +75,38 @@ const MyModel = {
         })
     },
 
+    findSentRequestFriendById(id, callback) {
+        this.getModel().aggregate([
+            {
+                $match: {
+                    _id: id
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    'sent_request': '$friend.sent_request',
+                }
+            }
+        ], (err, docs) => {
+            if (docs.length > 0) {
+                docs.forEach((doc) => {
+                    let ids = doc.sent_request;
+                    ids = ids.map((id) => {
+                        return new mongoose.Types.ObjectId(id);
+                    })
+                    this.getModel().find({
+                        _id: {
+                            $in: ids
+                        },
+                    }, (err, docs) => {
+                        if (Helper.isFn(callback)) callback(err, docs);
+                    })
+                })
+            } else if (Helper.isFn(callback)) callback(err, docs);
+        })
+    },
+
     findFriendsByUsername(username, callback) {
         this.getModel().aggregate([
             {
@@ -79,13 +116,13 @@ const MyModel = {
             },
             {
                 $project: {
-                    'all_friends': '$friend.all',
+                    'friend': '$friend.friend',
                 }
             }
         ], (err, docs) => {
             if (docs.length > 0) {
                 docs.forEach((doc) => {
-                    let ids = doc.all_friends;
+                    let ids = doc.friend;
                     if (ids.length > 0) {
                         ids = ids.map((id) => {
                             return new mongoose.Types.ObjectId(id);
@@ -146,11 +183,6 @@ const MyModel = {
                 username: 'peteranh',
                 password: 'admin',
                 picture: "https://scontent.fsgn2-5.fna.fbcdn.net/v/t1.0-9/61103469_1109770422558853_2564158225184194560_n.jpg?_nc_cat=104&ccb=2&_nc_sid=09cbfe&_nc_ohc=BJ6L5IV_JfQAX8iDLtk&_nc_ht=scontent.fsgn2-5.fna&oh=ccf7880a2a77ee48a2fdf6663f3050c0&oe=6049EB1D",
-                friend: {
-                    all: [new mongoose.Types.ObjectId('56cb91bdc3464f14678934ca'), new mongoose.Types.ObjectId('56cb91bdc3464f14678934ca'), new mongoose.Types.ObjectId('56cb91bdc3464f14678934ca')],
-                    request: [],
-                    sent_request: [],
-                }
 
             },
             {
@@ -186,14 +218,14 @@ const MyModel = {
         return model;
     },
 
-    sentFriendRequestById: function (id, friendId, callback) {
+    unfriendById: function (id, friendId, callback) {
         let promises = [];
         // update user
         promises.push(
             new Promise((resolve) => {
-                this.getModel().findByIdAndUpdate(id, { $addToSet: { 'friend.sent_request': new mongoose.Types.ObjectId(friendId), }, },
+                this.getModel().updateOne({ _id: id }, { $pull: { 'friend.friend': new mongoose.Types.ObjectId(friendId), }, },
                     (err, result) => {
-                        resolve({ err, result });
+                        resolve(this.getUpdatedResult(err, result));
                     }
                 )
             })
@@ -202,9 +234,9 @@ const MyModel = {
         // update friend
         promises.push(
             new Promise((resolve) => {
-                this.getModel().findByIdAndUpdate(friendId, { $addToSet: { 'friend.request': new mongoose.Types.ObjectId(id), }, },
+                this.getModel().updateOne({ _id: friendId }, { $pull: { 'friend.friend': new mongoose.Types.ObjectId(id), }, },
                     (err, result) => {
-                        resolve({ err, result });
+                        resolve(this.getUpdatedResult(err, result));
                     }
                 )
             })
@@ -212,7 +244,109 @@ const MyModel = {
 
         Promise.all(promises)
             .then((promisesResult) => {
-                if (Helper.isFn(callback)) callback(err, promisesResult);
+                let result = this.getResultByMultiUpdatedResult(promisesResult);
+                if (Helper.isFn(callback)) callback(result.err, result.result);
+            })
+    },
+    sentFriendRequestById: function (id, friendId, callback) {
+        let promises = [];
+        // update user
+        promises.push(
+            new Promise((resolve) => {
+                this.getModel().updateOne({ _id: id }, { $addToSet: { 'friend.sent_request': new mongoose.Types.ObjectId(friendId), }, },
+                    (err, result) => {
+                        resolve(this.getUpdatedResult(err, result));
+                    }
+                )
+            })
+        )
+
+        // update friend
+        promises.push(
+            new Promise((resolve) => {
+                this.getModel().updateOne({ _id: friendId }, { $addToSet: { 'friend.request': new mongoose.Types.ObjectId(id), }, },
+                    (err, result) => {
+                        resolve(this.getUpdatedResult(err, result));
+                    }
+                )
+            })
+        )
+
+        Promise.all(promises)
+            .then((promisesResult) => {
+                let result = this.getResultByMultiUpdatedResult(promisesResult);
+                if (Helper.isFn(callback)) callback(result.err, result.result);
+            })
+    },
+    cancelFriendRequest: function (id, friendId, callback) {
+        let promises = [];
+        // update user
+        promises.push(
+            new Promise((resolve) => {
+                this.getModel().updateOne({ _id: id }, { $pull: { 'friend.sent_request': new mongoose.Types.ObjectId(friendId), }, },
+                    (err, result) => {
+                        resolve(this.getUpdatedResult(err, result));
+                    }
+                )
+            })
+        )
+
+        // update friend
+        promises.push(
+            new Promise((resolve) => {
+                this.getModel().updateOne({ _id: friendId }, { $pull: { 'friend.request': new mongoose.Types.ObjectId(id), }, },
+                    (err, result) => {
+                        resolve(this.getUpdatedResult(err, result));
+                    }
+                )
+            })
+        )
+
+        Promise.all(promises)
+            .then((promisesResult) => {
+                let result = this.getResultByMultiUpdatedResult(promisesResult);
+                if (Helper.isFn(callback)) callback(result.err, result.result);
+            })
+    },
+    confirmFriendRequest: function (id, friendId, callback) {
+        let promises = [];
+
+        //request
+        // update user
+        const friendObjectId = new mongoose.Types.ObjectId(friendId);
+        promises.push(
+            new Promise((resolve) => {
+                this.getModel().updateOne({ _id: id },
+                    {
+                        $pull: { 'friend.request': friendObjectId, },
+                        $addToSet: { 'friend.friend': friendObjectId, },
+                    },
+                    (err, result) => {
+                        resolve(this.getUpdatedResult(err, result));
+                    }
+                )
+            })
+        )
+
+        // update friend
+        const objectId = new mongoose.Types.ObjectId(id);
+        promises.push(
+            new Promise((resolve) => {
+                this.getModel().updateOne({ _id: friendId }, {
+                    $pull: { 'friend.sent_request': objectId, },
+                    $addToSet: { 'friend.friend': objectId, },
+                },
+                    (err, result) => {
+                        resolve(this.getUpdatedResult(err, result));
+                    }
+                )
+            })
+        )
+
+        Promise.all(promises)
+            .then((promisesResult) => {
+                let result = this.getResultByMultiUpdatedResult(promisesResult);
+                if (Helper.isFn(callback)) callback(result.err, result.result);
             })
     }
 }
