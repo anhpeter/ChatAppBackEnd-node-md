@@ -278,6 +278,36 @@ const MyModel = {
                 if (Helper.isFn(callback)) callback(result.err, result.result);
             })
     },
+    deleteFriendRequest: function (id, friendId, callback) {
+        let promises = [];
+        // update user
+        promises.push(
+            new Promise((resolve) => {
+                this.getModel().updateOne({ _id: id }, { $pull: { 'friend.request': new mongoose.Types.ObjectId(friendId), }, },
+                    (err, result) => {
+                        resolve(this.getUpdatedResult(err, result));
+                    }
+                )
+            })
+        )
+
+        // update friend
+        promises.push(
+            new Promise((resolve) => {
+                this.getModel().updateOne({ _id: friendId }, { $pull: { 'friend.sent_request': new mongoose.Types.ObjectId(id), }, },
+                    (err, result) => {
+                        resolve(this.getUpdatedResult(err, result));
+                    }
+                )
+            })
+        )
+
+        Promise.all(promises)
+            .then((promisesResult) => {
+                let result = this.getResultByMultiUpdatedResult(promisesResult);
+                if (Helper.isFn(callback)) callback(result.err, result.result);
+            })
+    },
     cancelFriendRequest: function (id, friendId, callback) {
         let promises = [];
         // update user

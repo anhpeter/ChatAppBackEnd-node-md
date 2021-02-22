@@ -1,32 +1,34 @@
+const RoomName = require("../defines/Socket/RoomName");
+const SocketEventName = require("../defines/Socket/SocketEventName");
 const onlineUsers = require("../users/onlineUsers");
 const chat = (io) => {
     io.on('connection', (socket) => {
         const emitUserLeft = () => {
             let user = onlineUsers.removeBySocketId(socket.id);
             socket.rooms.forEach((room) => {
-                io.to(room).emit('user-left', { user });
+                io.to(room).emit(SocketEventName.userLeft, { user });
             });
         }
 
-        socket.on('john', (data) => {
-            io.to('all').emit('new-joiner', data);
+        socket.on(SocketEventName.join, (data) => {
+            io.to(RoomName.all).emit(SocketEventName.newJoiner, data)
         })
 
-        socket.on('send-message', (data) => {
-            io.to('all').emit('receive-message', data);
+        socket.on(SocketEventName.sendMessage, (data) => {
+            io.to(RoomName.all).emit(SocketEventName.receiveMessage, data);
         })
 
-        socket.on('typing', (data) => {
-            socket.to('all').emit('typing', data)
+        socket.on(SocketEventName.typing, (data) => {
+            socket.to(RoomName.all).emit(SocketEventName.typing, data)
         })
 
-        socket.on('stop-typing', (data) => {
-            socket.to('all').emit('stop-typing', data)
+        socket.on(SocketEventName.stopTyping, (data) => {
+            socket.to(RoomName.all).emit(SocketEventName.stopTyping, data)
         })
 
-        socket.on('leave', (data) => {
+        socket.on(SocketEventName.leave, (data) => {
             emitUserLeft();
-            socket.leave('all');
+            socket.leave(RoomName.all);
         })
 
         socket.on('disconnecting', function () {

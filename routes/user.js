@@ -68,8 +68,8 @@ router.get('/getSentRequestFriendById', (req, res, next) => {
     }, id)
 })
 
-router.get('/getUserByUsernameAndPassword', (req, res, next) => {
-    const { username, password } = req.query;
+router.post('/getUserByUsernameAndPassword', (req, res, next) => {
+    const { username, password } = req.body;
     Helper.runIfParamsNotNull(res, () => {
         MainModel.findByUsernameAndPassword(username, password, (err, doc) => {
             if (err) MyResponse.error(res, err);
@@ -146,7 +146,6 @@ router.post('/confirmFriendRequest', (req, res) => {
     Helper.runIfParamsNotNull(res, () => {
         MainModel.confirmFriendRequest(id, friendId, (err, result) => {
             if (err) {
-                console.log('err', err);
                 MyResponse.error(res, err);
             }
             else
@@ -162,7 +161,22 @@ router.post('/cancelFriendRequest', (req, res) => {
     Helper.runIfParamsNotNull(res, () => {
         MainModel.cancelFriendRequest(id, friendId, (err, result) => {
             if (err) {
-                console.log('err', err);
+                MyResponse.error(res, err);
+            }
+            else
+                if (result)
+                    MyResponse.success(res, result);
+                else
+                    MyResponse.fail(res);
+        });
+    }, id, friendId)
+})
+
+router.post('/deleteFriendRequest', (req, res) => {
+    const { id, friendId } = req.body;
+    Helper.runIfParamsNotNull(res, () => {
+        MainModel.deleteFriendRequest(id, friendId, (err, result) => {
+            if (err) {
                 MyResponse.error(res, err);
             }
             else
@@ -178,7 +192,6 @@ router.post('/cancelFriendRequest', (req, res) => {
     Helper.runIfParamsNotNull(res, () => {
         MainModel.cancelFriendRequest(id, friendId, (err, result) => {
             if (err) {
-                console.log('err', err);
                 MyResponse.error(res, err);
             }
             else

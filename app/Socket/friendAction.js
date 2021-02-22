@@ -38,6 +38,15 @@ const friendAction = (io) => {
                 })
             }
         })
+        socket.on('delete-friend-request', (data) => {
+            const { user, friendId } = data;
+            const friend = onlineUsers.findById(friendId);
+            if (friend) {
+                friend.socketIds.forEach((socketId) => {
+                    io.to(socketId).emit('friend-rejected', { user });
+                })
+            }
+        })
     })
 
 }

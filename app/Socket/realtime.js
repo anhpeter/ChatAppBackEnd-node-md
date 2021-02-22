@@ -1,37 +1,37 @@
+const RoomName = require("../defines/Socket/RoomName");
+const SocketEventName = require("../defines/Socket/SocketEventName");
 const MyModel = require("../models/user");
 const onlineUsers = require("../users/onlineUsers");
 const chat = require("./chat");
 const friendAction = require('./friendAction');
 
-
 const realtime = (io) => {
     friendAction(io);
     chat(io);
     io.on('connection', (socket) => {
-        console.log('user connected');
         const emitAllOnlineUsers = () => {
-            io.emit('online-users', onlineUsers.users);
+            io.emit(SocketEventName.onlineUsers, onlineUsers.users);
             console.log('online users', onlineUsers.showOnlineUsers());
         }
-        socket.on('john', (data) => {
-            console.log('realtime john event');
-            socket.join('all');
+
+        socket.on(SocketEventName.join, (data) => {
+            socket.join(RoomName.all);
             onlineUsers.addUser(data.user, socket.id);
+        })
+
+        socket.on(SocketEventName.getOnlineUsers, () => {
             emitAllOnlineUsers();
         })
 
-        socket.on('update-user', (data) => {
-            console.log('update user event', data);
+        socket.on(SocketEventName.updateUser, (data) => {
             const { id } = data;
             const user = onlineUsers.findById(id);
             if (user) {
                 const socketIds = user.socketIds;
                 MyModel.findById(user._id, (err, doc) => {
                     if (!err) {
-                        console.log('user', doc);
-
                         socketIds.forEach((socketId) => {
-                            io.to(socketId).emit('update-user', doc);
+                            io.to(socketId).emit(SocketEventName.updateUser, doc);
                             onlineUsers.updateById(id, doc);
                         })
                     }
@@ -39,10 +39,10 @@ const realtime = (io) => {
             }
         })
 
-        socket.on('leave', (data) => {
+        socket.on(SocketEventName.leave, (data) => {
             onlineUsers.removeBySocketId(socket.id);
             emitAllOnlineUsers();
-            socket.leave('all');
+            socket.leave(RoomName.all);
         })
 
         socket.on('disconnecting', function () {
