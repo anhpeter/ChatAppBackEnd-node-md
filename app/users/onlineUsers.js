@@ -1,76 +1,64 @@
 const onlineUsers = {
-    users: [],
+    users: {},
 
     addUser: function (user, socketId) {
-        let item = this.findByUsername(user.username);
+        let item = this.users[user._id];
         if (item) {
             item.socketIds.push(socketId);
         } else {
-            this.users.push({ ...user, socketIds: [socketId] });
+            this.users[user._id] = { ...user, socketIds: [socketId] };
         }
     },
 
     removeBySocketId: function (socketId) {
-        let index = this.findIndexBySocketId(socketId);
-        if (index > -1) {
-            let user = this.users[index];
-            let count = user.socketIds.length;
+        let key = this.findKeyBySocketId(socketId);
+        if (key) {
+            let item = this.users[key];
+            let count = item.socketIds.length;
             if (count > 1) {
-                let idIndex = user.socketIds.indexOf(socketId);
-                user.socketIds.splice(idIndex, 1);
+                let idIndex = item.socketIds.indexOf(socketId);
+                item.socketIds.splice(idIndex, 1);
             } else {
-                this.users.splice(index, 1);
+                delete this.users[key];
             }
-            return user;
+            return item;
         }
     },
 
     // FIND USER
     findBySocketId: function (socketId) {
-        let index = this.findIndexBySocketId(socketId);
-        if (index > -1) return this.users[index];
+        let key = this.findKeyBySocketId(socketId);
+        if (key) return this.users[key];
         return null;
     },
 
-    findIndexBySocketId: function (socketId) {
-        return this.users.findIndex((user) => {
-            return (user.socketIds.indexOf(socketId) > -1);
-        })
+    findKeyBySocketId: function (socketId) {
+        for (let key in this.users) {
+            let socketIds = this.users[key].socketIds;
+            if (socketIds.indexOf(socketId) > -1) return key;
+        }
+        return null;
     },
 
     findById: function (id) {
-        let index = this.findIndexById(id);
-        if (index > -1) return this.users[index];
-        return null;
-    },
-
-    findIndexById: function (id) {
-        return this.users.findIndex((user) => {
-            return (user._id === id);
-        })
-    },
-
-    findByUsername: function (username) {
-        let index = this.findIndexByUsername(username);
-        if (index > -1) return this.users[index];
-        return null;
-    },
-
-    findIndexByUsername: function (username) {
-        return this.users.findIndex((user) => {
-            return (user.username === username);
-        })
+        return this.users[id] || null;
     },
 
     showOnlineUsers: function () {
-        return onlineUsers.users.map((user) => {
+        let usersArr = this.getUsersArr();
+        return usersArr.map((user) => {
             return { username: user.username, socketCount: user.socketIds.length };
         });
     },
+
+    getUsersArr: function () {
+        let usersArr = Object.values(this.users);
+        return usersArr;
+    },
+
     updateById: function (id, item) {
-        const index = this.findIndexById(id);
-        const user = { ...this.users[index] };
-        this.users[index] = { ...user, ...item };
+        const user = { ...this.users[id] };
+        this.users[id] = { ...user, ...item };
     }
 }
 

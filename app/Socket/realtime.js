@@ -10,13 +10,14 @@ const realtime = (io) => {
     chat(io);
     io.on('connection', (socket) => {
         const emitAllOnlineUsers = () => {
-            io.emit(SocketEventName.onlineUsers, onlineUsers.users);
+            io.emit(SocketEventName.onlineUsers, onlineUsers.getUsersArr());
             console.log('online users', onlineUsers.showOnlineUsers());
         }
 
         socket.on(SocketEventName.join, (data) => {
             socket.join(RoomName.all);
             onlineUsers.addUser(data.user, socket.id);
+            emitAllOnlineUsers();
         })
 
         socket.on(SocketEventName.getOnlineUsers, () => {
