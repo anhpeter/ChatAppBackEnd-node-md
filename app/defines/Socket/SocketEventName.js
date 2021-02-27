@@ -1,15 +1,17 @@
 const SocketEventName = {
     updateUser: 'update-user',
-    join: 'john',
+    signIn: 'sign-in',
+    signOut: 'sign-out',
     getOnlineUsers: 'get-online-users',
-    leave: 'leave',
     sendMessage: 'send-message',
     typing: 'typing',
     stopTyping: 'stop-typing',
     receiveMessage: 'receive-message',
+    receiveNewMessageNotification: 'receive-new-message-notification',
     onlineUsers: 'online-users',
-    newJoiner: 'new-joiner',
-    userLeft: 'user-left',
+    joinUsersToConversation: 'join-users-to-conversation',
+    joinRoom: 'join-room',
+    leaveRoom: 'leave-room',
     acceptFriend: 'accept-friend',
     addFriend: 'add-friend',
     unfriend: 'unfriend',
@@ -20,8 +22,6 @@ const SocketEventName = {
     friendAccepted: 'friend-accepted',
     friendRequested: 'friend-requested',
     friendUnfriend: 'friend-unfriend',
-
-    // backend events only
 }
 
 module.exports = SocketEventName;

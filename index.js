@@ -26,6 +26,7 @@ const PORT = 3000;
 realtime(io);
 app.use(cors());
 app.use('/user', require('./routes/user'));
+app.use('/conversation', require('./routes/conversation'));
 
 
 server.listen(PORT, () => {

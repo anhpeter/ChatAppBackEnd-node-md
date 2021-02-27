@@ -17,7 +17,14 @@ const Helper = {
             if (this.isFn(callback)) callback()
         } else MyResponse.error(res, ErrorMessage.paramsInvalid);
 
-    }
+    },
 
+    getArrayOfFieldValue: function (items, field, type) {
+        const arrayOfFieldValue = items.map((item) => {
+            if (type === 'string') return item[field].toString();
+            return item[field];
+        })
+        return arrayOfFieldValue;
+    }
 }
 module.exports = Helper;

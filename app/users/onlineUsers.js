@@ -1,3 +1,5 @@
+const Helper = require("../defines/Helper");
+
 const onlineUsers = {
     users: {},
 
@@ -26,6 +28,12 @@ const onlineUsers = {
     },
 
     // FIND USER
+    findSocketIdsById: function (id) {
+        const item = this.findById(id);
+        if (item) return item.socketIds;
+        return null;
+    },
+
     findBySocketId: function (socketId) {
         let key = this.findKeyBySocketId(socketId);
         if (key) return this.users[key];
@@ -59,7 +67,23 @@ const onlineUsers = {
     updateById: function (id, item) {
         const user = { ...this.users[id] };
         this.users[id] = { ...user, ...item };
+    },
+
+    isUserOnline: function (userId) {
+        const user = this.users[userId];
+        return user != null;
+    },
+
+    loopOnlineUsersByIds: function (ids, callback) {
+        ids.forEach((id) => {
+            const item = this.findById(id);
+            if (item){
+                if (Helper.isFn(callback)) callback(item);
+            }
+        })
     }
+
+
 }
 
 module.exports = onlineUsers;

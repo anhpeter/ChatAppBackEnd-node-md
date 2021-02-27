@@ -1,3 +1,4 @@
+const Helper = require("../defines/Helper");
 const RoomName = require("../defines/Socket/RoomName");
 const SocketEventName = require("../defines/Socket/SocketEventName");
 const MyModel = require("../models/user");
@@ -14,10 +15,27 @@ const realtime = (io) => {
             console.log('online users', onlineUsers.showOnlineUsers());
         }
 
-        socket.on(SocketEventName.join, (data) => {
-            socket.join(RoomName.all);
+        socket.on(SocketEventName.signIn, (data) => {
             onlineUsers.addUser(data.user, socket.id);
             emitAllOnlineUsers();
+        })
+
+        socket.on(SocketEventName.joinUsersToConversation, (data) => {
+            const { ids, conversationId } = data;
+            onlineUsers.loopOnlineUsersByIds(ids, (item) => {
+                item.socketIds.forEach((socketId) => {
+                    const clientSocket = io.of('/').sockets.get(socketId)
+                    clientSocket.join(conversationId);
+                })
+            })
+        })
+
+        socket.on(SocketEventName.joinRoom, (data) => {
+            if (data.roomName) socket.join(data.roomName);
+        })
+
+        socket.on(SocketEventName.leaveRoom, (data) => {
+            if (data.roomName) socket.leave(data.roomName);
         })
 
         socket.on(SocketEventName.getOnlineUsers, () => {
@@ -40,13 +58,13 @@ const realtime = (io) => {
             }
         })
 
-        socket.on(SocketEventName.leave, (data) => {
+        socket.on(SocketEventName.signOut, (data) => {
             onlineUsers.removeBySocketId(socket.id);
             emitAllOnlineUsers();
-            socket.leave(RoomName.all);
         })
 
         socket.on('disconnecting', function () {
+            onlineUsers.removeBySocketId(socket.id);
             emitAllOnlineUsers();
         });
 
