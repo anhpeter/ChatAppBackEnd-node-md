@@ -34,7 +34,8 @@ const chat = (io) => {
             }
             ConversationModel.addMessageToConversationById(conversationId, item, (err, result) => {
                 if (!err && result) {
-                    io.to(conversationId).emit(SocketEventName.receiveMessage, item);
+                    io.to(supportFn.getCurrentConvoIdFormat(conversationId)).emit(SocketEventName.receiveMessage, { ...item, conversationId });
+                    io.to(conversationId).emit(SocketEventName.newMessageNotification, { ...item, conversationId });
                 }
             })
         })

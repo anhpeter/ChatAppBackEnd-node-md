@@ -25,7 +25,7 @@ const realtime = (io) => {
             onlineUsers.loopOnlineUsersByIds(ids, (item) => {
                 item.socketIds.forEach((socketId) => {
                     const clientSocket = io.of('/').sockets.get(socketId)
-                    clientSocket.join(conversationId);
+                    if (clientSocket) clientSocket.join(conversationId);
                 })
             })
         })

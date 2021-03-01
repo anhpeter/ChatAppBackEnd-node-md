@@ -17,11 +17,7 @@ const MyModel = {
 
     listIdsByUserId: function (id, callback) {
         this.getModel().find({
-            members: {
-                $elemMatch: {
-                    _id: id
-                }
-            }
+            members: id,
         }, {
             select: "_id"
         }, (err, result) => {
@@ -31,7 +27,6 @@ const MyModel = {
 
     // find
     findInfoByUserIdsOrCreateIfNotExist: function (ids, callback) {
-        console.log('ids input', ids);
         this.getModel().findOne({
             members: {
                 $size: ids.length,
@@ -42,28 +37,24 @@ const MyModel = {
             members: 1,
         }, (err, result) => {
             if (result != null) {
-                console.log('members', result.members);
                 if (Helper.isFn(callback)) callback(err, result);
             } else {
                 // not found
-                UserModel.findUsersByIds(ids, (err, users) => {
-                    if (!err) {
-                        const item = {
-                            members: users,
-                            created: MyTime.getUTCNow(),
+                const item = {
+                    members: ids,
+                    created: MyTime.getUTCNow(),
+                }
+                this.insert(item, (err, doc) => {
+                    if (Helper.isFn(callback)) {
+                        if (err) callback(err, doc);
+                        else {
+                            let temp = { ...doc._doc };
+                            temp.isNew = true;
+                            callback(err, temp);
                         }
-                        this.insert(item, (err, doc) => {
-                            if (Helper.isFn(callback)) {
-                                if (err) callback(err, doc);
-                                else {
-                                    let temp = { ...doc._doc };
-                                    temp.isNew = true;
-                                    callback(err, temp);
-                                }
-                            }
-                        })
-                    } else if (Helper.isFn(callback)) callback(err, users);
+                    }
                 })
+
 
             }
         });
@@ -90,6 +81,52 @@ const MyModel = {
         })
     },
 
+    listItemsForListDisplay: function (id, callback) {
+        this.getModel().aggregate([
+            {
+                $match: {
+                    members: new mongoose.Types.ObjectId(id)
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    let: { the_members: "$members", },
+                    pipeline: [
+                        {
+                            $match:
+                            {
+                                $expr:
+                                {
+                                    $and:
+                                        [
+                                            { $in: ["$_id", "$$the_members"] }
+                                        ]
+                                }
+                            },
+                        },
+                        {
+                            $project: {
+                                username: 1,
+                                picture: 1,
+                            }
+                        }
+                    ],
+                    as: "members"
+                },
+            },
+            {
+                $project: {
+                    name: 1,
+                    members: 1,
+                    lastMessage: 1,
+                }
+            }
+        ], (err, docs) => {
+            if (Helper.isFn(callback)) callback(err, docs);
+        })
+    },
+
     findBySpecialName: function (callback) {
         this.getModel().findOne({ specialName: RoomName.all }, (err, doc) => {
             if (Helper.isFn(callback)) callback(err, doc);
@@ -106,22 +143,13 @@ const MyModel = {
 
 
     // add messages
-    addMessageToSpecialConversation: function (specialName, message, callback) {
-        this.getModel().updateOne({ specialName }, {
-            $push: {
-                messages: message
-            }
-        }, (err, result) => {
-            if (Helper.isFn(callback)) callback(err, result);
-        })
-    },
-
     addMessageToConversationById: function (id, message, callback) {
         this.getModel().findOneAndUpdate(
             {
                 _id: id,
             },
             {
+                lastMessage: message,
                 $push: { messages: message }
             },
             {

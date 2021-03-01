@@ -64,4 +64,20 @@ router.get('/reset', (req, res) => {
     })
 })
 
+router.get('/listConversationsForListDisplay', (req, res) => {
+    const { id } = req.query;
+    Helper.runIfParamsNotNull(res, () => {
+        MainModel.listItemsForListDisplay(id, (err, docs) => {
+            if (err) {
+                MyResponse.error(res, err);
+            }
+            else
+                if (docs)
+                    MyResponse.success(res, docs);
+                else
+                    MyResponse.fail(res);
+        });
+    }, id)
+})
+
 module.exports = router;
