@@ -60,6 +60,10 @@ const realtime = (io) => {
 
         socket.on(SocketEventName.signOut, (data) => {
             onlineUsers.removeBySocketId(socket.id);
+            const rooms = socket.rooms;
+            rooms.forEach((roomName) => {
+                socket.leave(roomName);
+            })
             emitAllOnlineUsers();
         })
 
@@ -69,7 +73,6 @@ const realtime = (io) => {
         });
 
         socket.on('disconnect', () => {
-            console.log('user disconnected');
         })
     })
 }

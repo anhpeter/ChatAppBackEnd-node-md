@@ -80,4 +80,20 @@ router.get('/listConversationsForListDisplay', (req, res) => {
     }, id)
 })
 
+router.get('/getSidebarConversationById', (req, res) => {
+    const { id } = req.query;
+    Helper.runIfParamsNotNull(res, () => {
+        MainModel.findSidebarItemById(id, (err, doc) => {
+            if (err) {
+                MyResponse.error(res, err);
+            }
+            else
+                if (doc)
+                    MyResponse.success(res, doc);
+                else
+                    MyResponse.fail(res);
+        });
+    }, id)
+})
+
 module.exports = router;

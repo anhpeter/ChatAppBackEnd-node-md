@@ -17,8 +17,8 @@ const MyModel = {
 
     listIdsByUserId: function (id, callback) {
         this.getModel().find({
-            members: id,
-        }, {
+            members: new mongoose.Types.ObjectId(id),
+        }, {}, {
             select: "_id"
         }, (err, result) => {
             if (Helper.isFn(callback)) callback(err, result);
@@ -81,6 +81,64 @@ const MyModel = {
         })
     },
 
+    findSidebarItemById: function (id, callback) {
+        this.getModel().aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(id)
+                }
+            },
+            this.getMembersLookup(),
+            this.getSidebarItemProjection(),
+            {
+                $limit: 1,
+            }
+        ], (err, docs) => {
+            const [doc] = docs;
+            if (Helper.isFn(callback)) callback(err, doc);
+        })
+    },
+
+    getMembersLookup: function () {
+        return {
+            $lookup: {
+                from: "users",
+                let: { the_members: "$members", },
+                pipeline: [
+                    {
+                        $match:
+                        {
+                            $expr:
+                            {
+                                $and:
+                                    [
+                                        { $in: ["$_id", "$$the_members"] }
+                                    ]
+                            }
+                        },
+                    },
+                    {
+                        $project: {
+                            username: 1,
+                            picture: 1,
+                        }
+                    }
+                ],
+                as: "members"
+            },
+        }
+    },
+
+    getSidebarItemProjection: function () {
+        return {
+            $project: {
+                name: 1,
+                members: 1,
+                lastMessage: 1,
+            }
+        }
+    },
+
     listItemsForListDisplay: function (id, callback) {
         this.getModel().aggregate([
             {
@@ -88,38 +146,11 @@ const MyModel = {
                     members: new mongoose.Types.ObjectId(id)
                 }
             },
+            this.getMembersLookup(),
+            this.getSidebarItemProjection(),
             {
-                $lookup: {
-                    from: "users",
-                    let: { the_members: "$members", },
-                    pipeline: [
-                        {
-                            $match:
-                            {
-                                $expr:
-                                {
-                                    $and:
-                                        [
-                                            { $in: ["$_id", "$$the_members"] }
-                                        ]
-                                }
-                            },
-                        },
-                        {
-                            $project: {
-                                username: 1,
-                                picture: 1,
-                            }
-                        }
-                    ],
-                    as: "members"
-                },
-            },
-            {
-                $project: {
-                    name: 1,
-                    members: 1,
-                    lastMessage: 1,
+                $sort: {
+                    'lastMessage.time': -1
                 }
             }
         ], (err, docs) => {
@@ -153,7 +184,7 @@ const MyModel = {
                 $push: { messages: message }
             },
             {
-                select: 'members specialName',
+                select: 'members',
             }, (err, result) => {
                 if (Helper.isFn(callback)) callback(err, result);
             })
