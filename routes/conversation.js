@@ -29,6 +29,21 @@ router.post('/getConversationInfoByUserIdsOrCreateIfNotExist', (req, res) => {
     }, ids)
 })
 
+router.post('/getConversationByMemberIds', (req, res) => {
+    const { ids } = req.body;
+    Helper.runIfParamsNotNull(res, () => {
+        MainModel.findByMemberIds(ids, (err, doc) => {
+            if (err) {
+                MyResponse.error(res, err);
+            }
+            else
+                if (doc)
+                    MyResponse.success(res, doc);
+                else
+                    MyResponse.fail(res);
+        });
+    }, ids)
+})
 router.get('/getConversationById', (req, res) => {
     const { id } = req.query;
     Helper.runIfParamsNotNull(res, () => {

@@ -28,10 +28,7 @@ const MyModel = {
     // find
     findInfoByUserIdsOrCreateIfNotExist: function (ids, callback) {
         this.getModel().findOne({
-            members: {
-                $size: ids.length,
-                $all: ids
-            }
+            members: this.getMemberIdsMatch(ids),
         }, {
             _id: 1,
             members: 1,
@@ -81,6 +78,14 @@ const MyModel = {
         })
     },
 
+    findByMemberIds: function (ids, callback) {
+        this.getModel().findOne({
+            members: this.getMemberIdsMatch(ids)
+        }, (err, doc) => {
+            if (Helper.isFn(callback)) callback(err, doc);
+        })
+    },
+
     findSidebarItemById: function (id, callback) {
         this.getModel().aggregate([
             {
@@ -97,6 +102,72 @@ const MyModel = {
             const [doc] = docs;
             if (Helper.isFn(callback)) callback(err, doc);
         })
+    },
+
+    listItemsForListDisplay: function (id, callback) {
+        this.getModel().aggregate([
+            {
+                $match: {
+                    members: new mongoose.Types.ObjectId(id),
+                    lastMessage: {
+                        $exists: true
+                    }
+                }
+            },
+            this.getMembersLookup(),
+            this.getSidebarItemProjection(),
+            {
+                $sort: {
+                    'lastMessage.time': -1
+                }
+            }
+        ], (err, docs) => {
+            if (Helper.isFn(callback)) callback(err, docs);
+        })
+    },
+
+    findBySpecialName: function (callback) {
+        this.getModel().findOne({ specialName: RoomName.all }, (err, doc) => {
+            if (Helper.isFn(callback)) callback(err, doc);
+        })
+    },
+
+    // manipulation
+    insert: function (object, callback) {
+        const item = new this.getModel()(object);
+        item.save((err, doc) => {
+            if (Helper.isFn(callback)) callback(err, doc);
+        })
+    },
+
+    // add messages
+    addMessageToConversationById: function (id, message, callback) {
+        this.getModel().findOneAndUpdate(
+            {
+                _id: id,
+            },
+            {
+                lastMessage: message,
+                $push: { messages: message }
+            },
+            {
+                select: 'members',
+            }, (err, result) => {
+                if (Helper.isFn(callback)) callback(err, result);
+            })
+    },
+
+    getModel: function () {
+        return model;
+    },
+
+    // options
+    getMemberIdsMatch: function (ids) {
+        ids = this.convertStringArrayToObjectIdArray(ids);
+        return {
+            $size: ids.length,
+            $all: ids,
+        }
     },
 
     getMembersLookup: function () {
@@ -137,64 +208,6 @@ const MyModel = {
                 lastMessage: 1,
             }
         }
-    },
-
-    listItemsForListDisplay: function (id, callback) {
-        this.getModel().aggregate([
-            {
-                $match: {
-                    members: new mongoose.Types.ObjectId(id),
-                    lastMessage: {
-                        $exists: true
-                    }
-                }
-            },
-            this.getMembersLookup(),
-            this.getSidebarItemProjection(),
-            {
-                $sort: {
-                    'lastMessage.time': -1
-                }
-            }
-        ], (err, docs) => {
-            if (Helper.isFn(callback)) callback(err, docs);
-        })
-    },
-
-    findBySpecialName: function (callback) {
-        this.getModel().findOne({ specialName: RoomName.all }, (err, doc) => {
-            if (Helper.isFn(callback)) callback(err, doc);
-        })
-    },
-
-    // manipulation
-    insert: function (object, callback) {
-        const item = new this.getModel()(object);
-        item.save((err, doc) => {
-            if (Helper.isFn(callback)) callback(err, doc);
-        })
-    },
-
-
-    // add messages
-    addMessageToConversationById: function (id, message, callback) {
-        this.getModel().findOneAndUpdate(
-            {
-                _id: id,
-            },
-            {
-                lastMessage: message,
-                $push: { messages: message }
-            },
-            {
-                select: 'members',
-            }, (err, result) => {
-                if (Helper.isFn(callback)) callback(err, result);
-            })
-    },
-
-    getModel: function () {
-        return model;
     },
 
     // 
