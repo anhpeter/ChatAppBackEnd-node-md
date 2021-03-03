@@ -96,6 +96,21 @@ router.get('/getUserByUsername', (req, res, next) => {
     }, username)
 })
 
+router.post('/getReceivers', (req, res, next) => {
+    let { username, exceptIds = [] } = req.body;
+    exceptIds = exceptIds || [];
+    Helper.runIfParamsNotNull(res, () => {
+        MainModel.findReceivers(username, exceptIds, (err, docs) => {
+            if (err) MyResponse.error(res, err);
+            else
+                if (docs)
+                    MyResponse.success(res, docs);
+                else
+                    MyResponse.fail(res);
+        });
+    }, username, exceptIds)
+})
+
 // CREATE
 router.post('/createAccount', (req, res, next) => {
     const { username, password } = req.body;

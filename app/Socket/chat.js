@@ -28,7 +28,6 @@ const chat = (io) => {
         })
 
         socket.on(SocketEventName.sendMessage, (data) => {
-            console.log('rooms', socket.rooms)
             const { user, message, conversationId } = data;
             const item = {
                 from: user, text: message, time: MyTime.getUTCNow(),
@@ -38,7 +37,6 @@ const chat = (io) => {
                     io.to(supportFn.getCurrentConvoIdFormat(conversationId)).emit(SocketEventName.receiveMessage, { message: item, conversationId });
 
                     // notify
-                    console.log('emit to', conversationId)
                     io.to(conversationId).emit(SocketEventName.newMessageNotification, { message: item, conversationId });
                 }
             })

@@ -32,8 +32,7 @@ const MyModel = {
     },
 
     findByUsernameAndPassword: function (username, password, callback) {
-        this.getModel().find({ username, password }, (err, docs) => {
-            const [doc] = docs;
+        this.getModel().findOne({ username, password }, (err, doc) => {
             if (Helper.isFn(callback)) callback(err, doc);
         })
     },
@@ -144,6 +143,29 @@ const MyModel = {
         this.getModel().find({ username }, (err, docs) => {
             const [doc] = docs;
             if (Helper.isFn(callback)) callback(err, doc);
+        })
+    },
+
+    findReceivers: function (username, exceptIds, callback) {
+        this.getModel().aggregate([
+            {
+                $match: {
+                    username: {
+                        $regex: `${username}.*`, $options: `i`
+                    },
+                    _id: {
+                        $nin: this.convertStringArrayToObjectIdArray(exceptIds),
+                    },
+                }
+            },
+            {
+                $project: {
+                    username: 1,
+                    picture: 1
+                }
+            }
+        ], (err, docs) => {
+            if (Helper.isFn(callback)) callback(err, docs);
         })
     },
 

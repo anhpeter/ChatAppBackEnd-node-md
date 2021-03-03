@@ -143,7 +143,10 @@ const MyModel = {
         this.getModel().aggregate([
             {
                 $match: {
-                    members: new mongoose.Types.ObjectId(id)
+                    members: new mongoose.Types.ObjectId(id),
+                    lastMessage: {
+                        $exists: true
+                    }
                 }
             },
             this.getMembersLookup(),
