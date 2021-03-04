@@ -57,6 +57,23 @@ const MyModel = {
         });
     },
 
+    createConversationByMemberIds: function (ids, message, callback) {
+        const item = {
+            members: ids,
+            messages: [],
+            created: MyTime.getUTCNow(),
+        }
+        if (message) {
+            item.messages.push(message);
+            item.lastMessage = message;
+        }
+        this.insert(item, (err, doc) => {
+            console.log(err, doc);
+            if (Helper.isFn(callback)) callback(err, doc);
+        })
+
+    },
+
     findByUserIds: function (ids, callback) {
         this.getModel().findOne({
             members: {
