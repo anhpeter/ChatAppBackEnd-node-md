@@ -10,14 +10,17 @@ const realtime = (io) => {
     friendAction(io);
     chat(io);
     io.on('connection', (socket) => {
+        const checkUserAndEmitIfOffline = (user) => {
+            if (!onlineUsers.isUserOnline(user._id)) socket.broadcast.emit(SocketEventName.onlineUserLeft, user);
+        }
         const emitAllOnlineUsers = () => {
-            io.emit(SocketEventName.onlineUsers, onlineUsers.getUsersArr());
+            socket.emit(SocketEventName.onlineUsers, onlineUsers.getUsersArr());
             console.log('online users', onlineUsers.showOnlineUsers());
         }
 
         socket.on(SocketEventName.signIn, (data) => {
             onlineUsers.addUser(data.user, socket.id);
-            emitAllOnlineUsers();
+            socket.broadcast.emit(SocketEventName.newOnlineUser, data.user);
         })
 
         socket.on(SocketEventName.joinUsersToConversation, (data) => {
@@ -60,16 +63,18 @@ const realtime = (io) => {
 
         socket.on(SocketEventName.signOut, (data) => {
             onlineUsers.removeBySocketId(socket.id);
+            checkUserAndEmitIfOffline(data.user);
             const rooms = socket.rooms;
             rooms.forEach((roomName) => {
                 socket.leave(roomName);
             })
-            emitAllOnlineUsers();
         })
 
         socket.on('disconnecting', function () {
-            onlineUsers.removeBySocketId(socket.id);
-            emitAllOnlineUsers();
+            const item = onlineUsers.removeBySocketId(socket.id);
+            if (item) {
+                checkUserAndEmitIfOffline(item);
+            }
         });
 
         socket.on('disconnect', () => {

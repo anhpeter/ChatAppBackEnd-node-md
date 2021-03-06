@@ -9,6 +9,8 @@ const SocketEventName = {
     receiveMessage: 'receive-message',
     newMessageNotification: 'new-message-notification',
     onlineUsers: 'online-users',
+    newOnlineUser: 'new-online-user',
+    onlineUserLeft: 'online-user-left',
     joinUsersToConversation: 'join-users-to-conversation',
     joinRoom: 'join-room',
     leaveRoom: 'leave-room',

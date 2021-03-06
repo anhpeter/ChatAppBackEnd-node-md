@@ -68,7 +68,6 @@ const MyModel = {
             item.lastMessage = message;
         }
         this.insert(item, (err, doc) => {
-            console.log(err, doc);
             if (Helper.isFn(callback)) callback(err, doc);
         })
 
